@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run current file",
+      "type": "shell",
+      "command": "if [[ '${fileExtname}' == '.sql' ]]; then .venv/bin/python -c \"import duckdb,sys; con=duckdb.connect('taxi.duckdb'); [print(con.sql(q)) for q in open(sys.argv[1]).read().split(';') if q.strip() and not all(l.strip().startswith('--') or not l.strip() for l in q.splitlines())]\" '${file}'; else .venv/bin/python '${file}'; fi",
+      "options": { "cwd": "${workspaceFolder}", "shell": { "executable": "/bin/zsh", "args": ["-c"] } },
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "clear": true },
+      "problemMatcher": []
+    }
+  ]
+}
