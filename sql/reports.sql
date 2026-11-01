@@ -16,15 +16,33 @@
 
 
 -- R1. Daily revenue: for each day, how many trips and how much total revenue (total_amount, 2 decimals)?
---     Output: pickup_date, trips, revenue      (sorted by date; 31 rows)
+--     Output: pickup_date, trips, revenue      (sorted by date, 31 rows)
 --     Answer (first 3 rows): 2024-01-01 68127 2123813.69 | 2024-01-02 71167 2201670.29 | 2024-01-03 78229 2287854.06
 
-
+select pickup_date,
+       count(*) as trips,
+       round(sum(total_amount), 2) as revenue
+from fact_trips
+group by pickup_date
+order by pickup_date;
 
 -- R2. Top 5 pickup zones by total revenue, with their borough.
 --     Output: zone_name, borough, revenue
 --     Answer: JFK Airport, Queens, 11166124.94 | LaGuardia Airport, Queens, 5790026.95 | Midtown Center, Manhattan, 3271244.79
 --             | Upper East Side South, Manhattan, 2703925.64 | Times Sq/Theatre District, Manhattan, 2685458.07
+with cte as (
+select z.zone_name,z.borough,round(sum(t.total_amount), 2) as revenue,row_number() over (order by revenue desc) as rn
+from dim_zone z
+join fact_trips t
+on t.pickup_zone_id=z.zone_id
+group by z.zone_name,z.borough)
+
+select zone_name,borough,revenue
+from cte
+where rn<6;
+
+
+
 
 
 
@@ -32,17 +50,45 @@
 --     Output: day_type ('weekday' or 'weekend'), trips, avg_fare
 --     Answer: weekday 2056181 18.62 | weekend 698689 17.83
 
+select  case when d.is_weekend then 'weekend' else 'weekday' end as day_type,
+count(t.*) as trips,
+round(avg(t.fare_amount),2) as average_fare
+from fact_trips t
+join dim_date d
+on d.date_key=t.pickup_date
+group by day_type;
 
 
 -- R4. Tips by payment type: trips, and total tips as a percent of total fares (1 decimal).
 --     Output: payment_name, trips, tip_pct      (sorted by trips, most first)
 --     Answer: Credit Card 2298404 22.6 | Cash 422939 0.0 | Dispute 22879 0.0 | No Charge 10648 0.0
 --     (Why is cash 0? Write one sentence about it under your query.)
+select p.payment_name,count(t.*) as trips,round(sum(t.tip_amount)*100/sum(t.fare_amount),2) as tip_pct
+from fact_trips t
+join dim_payment p
+on t.payment_type_id=p.payment_type_id
+group by p.payment_name;
 
-
-
+-- Cash tips show 0 because they're handed directly to the driver and never recorded
+-- by the meter. Only card tips are captured, so 0 here means "not recorded", not "no tip";
 -- R5. For each borough, the pickup zone with the most trips (tie -> alphabetical zone_name).
 --     Output: borough, zone_name, trips      (sorted by trips, most first)
 --     Answer (first 3 rows): Queens, JFK Airport, 138130 | Manhattan, Upper East Side South, 137092 | Unknown, N/A, 9480
 
-
+   with cte as (                                                  -- line A: trips per borough per zone
+    select z.borough, z.zone_name, count(*) as trips
+    from fact_trips t
+    join dim_zone z on t.pickup_zone_id = z.zone_id
+    group by z.borough, z.zone_name
+),
+ranked as (                                                    -- line B: rank zones inside each borough
+    select borough, zone_name, trips,
+           row_number() over (partition by borough             -- each borough ranked separately
+                              order by trips desc,             -- most trips = 1
+                                       zone_name) as rn        -- tie → alphabetical
+    from cte
+)
+select borough, zone_name, trips                               -- line C: keep the #1 of each borough
+from ranked
+where rn = 1
+order by trips desc;

@@ -12,3 +12,6 @@ data/processed/*
 *.duckdb.wal
 
 .DS_Store
+
+# secrets - never commit
+.env
