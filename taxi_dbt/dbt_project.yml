@@ -1,0 +1,9 @@
+name: taxi_dbt
+version: "1.0"
+profile: taxi_dbt
+
+model-paths: ["models"]
+
+models:
+  taxi_dbt:
+    +materialized: table

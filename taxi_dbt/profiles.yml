@@ -1,0 +1,7 @@
+taxi_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../taxi.duckdb
+      schema: dbt

@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: facttrips
+    columns:
+      - name: trip_id
+        tests: [unique, not_null]
+      - name: pickup_zone_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_zone')
+              field: zone_id
+
+  - name: dim_zone
+    columns:
+      - name: zone_id
+        tests: [unique, not_null]
