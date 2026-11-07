@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: facttrips
+  - name: fact_trips
     columns:
       - name: trip_id
         tests: [unique, not_null]
