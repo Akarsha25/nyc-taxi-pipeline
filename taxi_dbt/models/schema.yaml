@@ -11,8 +11,19 @@ models:
           - relationships:
               to: ref('dim_zone')
               field: zone_id
+      - name: payment_type_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_payment')
+              field: payment_type_id
 
   - name: dim_zone
     columns:
       - name: zone_id
+        tests: [unique, not_null]
+
+  - name: dim_payment
+    columns:
+      - name: payment_type_id
         tests: [unique, not_null]
