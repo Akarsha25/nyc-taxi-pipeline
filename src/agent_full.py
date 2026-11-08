@@ -25,14 +25,14 @@ tools = [{
 
 # --- D. the table list ---
 schema = """Tables:
-fact_trips(pickup_zone_id, payment_type_id, pickup_date, trip_distance, fare_amount, tip_amount, total_amount)
-dim_zone(zone_id, zone_name, borough)
-dim_date(date_key, day_name, is_weekend, is_holiday)
-dim_payment(payment_type_id, payment_name)
+dbt.fact_trips(pickup_zone_id, payment_type_id, pickup_date, trip_distance, fare_amount, tip_amount, total_amount)
+dbt.dim_zone(zone_id, zone_name, borough)
+dbt.dim_date(date_key, day_name, is_weekend, is_holiday)
+dbt.dim_payment(payment_type_id, payment_name)
 Joins:
-fact_trips.pickup_zone_id = dim_zone.zone_id
-fact_trips.pickup_date = dim_date.date_key
-fact_trips.payment_type_id = dim_payment.payment_type_id"""
+dbt.fact_trips.pickup_zone_id = dbt.dim_zone.zone_id
+dbt.fact_trips.pickup_date = dbt.dim_date.date_key
+dbt.fact_trips.payment_type_id = dbt.dim_payment.payment_type_id"""
 
 client = anthropic.Anthropic()
 

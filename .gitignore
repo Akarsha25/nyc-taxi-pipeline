@@ -20,3 +20,7 @@ data/processed/*
 taxi_dbt/target/
 taxi_dbt/logs/
 taxi_dbt/.user.yml
+
+# Airflow environment and home - local only
+.venv-airflow/
+airflow_home/
