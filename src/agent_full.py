@@ -1,5 +1,13 @@
+import os
 import anthropic
 import duckdb
+
+# --- read the API key from the .env file (never committed: .env is in .gitignore) ---
+if os.path.exists(".env"):
+    for line in open(".env"):
+        if "=" in line:
+            name, value = line.strip().split("=", 1)
+            os.environ[name] = value          # the .env key wins over any old value in the terminal
 
 # --- A. open the database (read-only) ---
 con = duckdb.connect("taxi.duckdb", read_only=True)
@@ -11,7 +19,12 @@ def run_sql(query):
         return str(rows[:20])
     except Exception as e:
         return "SQL error: " + str(e)          # send the error back so Claude can fix its SQL
-
+def describe_tables ():
+    rows=con.sql(""" select table_name,string_agg(column_name,',')
+     from information_schema.columns
+      where table_schema='dbt'
+       group by table_name """).fetchall()
+    return "\n".join(f"dbt.{table}({columns})" for table,columns in rows)
 # --- C. the menu ---
 tools = [{
     "name": "run_sql",
@@ -21,6 +34,15 @@ tools = [{
         "properties": {"query": {"type": "string"}},
         "required": ["query"],
     },
+},
+    {"name": "describe_tables",
+        "description":  "List every table in the NYC taxi warehouse and its columns. Use this first if you are not sure of the names.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            
+        },  
+
 }]
 
 # --- D. the table list ---
@@ -44,7 +66,7 @@ def ask(question, show_steps=True):
             model="claude-opus-5-5",
             max_tokens=2000,
             tools=tools,
-            system="You are a data analyst for NYC taxi data. Answer in at most 5 lines.\n" + schema,
+            system="You are a data analyst for NYC taxi data. Use describe_tables to see the tables before writing SQL. Answer in at most 5 lines.",
             messages=messages,
         )
 
@@ -59,10 +81,13 @@ def ask(question, show_steps=True):
         results = []
         for block in response.content:                 # H. run every SQL Claude asked for
             if block.type == "tool_use":
-                sql = block.input["query"]
-                result = run_sql(sql)
+                if block.name=="describe_tables":
+                    result=describe_tables()
+                else:
+                    sql=block.input["query"]
+                    result=run_sql(sql)
                 if show_steps:
-                    print("Claude's SQL:", sql)
+                    print("Tool:", block.name, block.input)
                     print("Result:", result)
                 results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
 
